@@ -1,6 +1,14 @@
-var builder = WebApplication.CreateBuilder(args);
+using System;
+using System.IO;
+
+var builder = WebApplication.CreateBuilder();
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+app.MapPost("/data", async (HttpContext httpContext) =>
+{
+    using StreamReader reader = new StreamReader(httpContext.Request.Body);
+    string name = await reader.ReadToEndAsync();
+    return $"Получены данные: {name}";
+});
 
 app.Run();
