@@ -1,10 +1,50 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System;
 using System.IO;
 using TicketApi;
+using System.Text;
 
 
 var builder = WebApplication.CreateBuilder();
 var app = builder.Build();
+
+builder.Services.AddAuthorization();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = AuthOptions.ISSUER,
+            ValidateAudience = true,
+            ValidAudience = AuthOptions.AUDIENCE,
+            ValidateLifetime = true,
+            IssuerSigningKey = AuthOptions.GetSymmetricSecurityKey(),
+            ValidateIssuerSigningKey = true
+        };
+    });
+
+
+
+
+
+UserApi.MapRoutes(app);
+app.Run();
+
+public class AuthOptions
+{
+    public const string ISSUER = "MyAuthServer"; // издатель токена
+    public const string AUDIENCE = "MyAuthClient"; // потребитель токена
+    const string KEY = "mysupersecret_secretsecretsecretkey!123";   // ключ для шифрации
+    public static SymmetricSecurityKey GetSymmetricSecurityKey() =>
+        new SymmetricSecurityKey(Encoding.UTF8.GetBytes(KEY));
+}
+
+
 
 /* using (var db = new TicketsystemContext())
 {
@@ -13,27 +53,3 @@ var app = builder.Build();
     db.SaveChanges();
 }
 */
-
-using ( var db= new TicketsystemContext())
-{
-    var users = db.Users.ToList();
-    foreach (var user in users)
-    {
-        Console.WriteLine(user.UserId + " " + user.Username + " " + user.Login + " " + user.Password + " " + user.JobTitle + " "+user.Role);
-    }
-
-    foreach (var user in users)
-    {
-        if (user.Login == "iva")
-        {
-            db.Users.Remove(user);
-        }
-        db.SaveChanges();
-    }
-
-    foreach (var user in users)
-    {
-        Console.WriteLine(user.UserId + " " + user.Username + " " + user.Login + " " + user.Password + " " + user.JobTitle + " " + user.Role);
-    }
-}
-app.Run();
