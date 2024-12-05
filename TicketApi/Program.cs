@@ -51,10 +51,3 @@ public class AuthOptions
 
 
 
-/* using (var db = new TicketsystemContext())
-{
-    User nuser = new User {Username = "Иван", Login="iva", Password="lalala",JobTitle="Учитель", Role="use"};
-    db.Users.Add(nuser);
-    db.SaveChanges();
-}
-*/

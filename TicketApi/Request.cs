@@ -15,7 +15,7 @@ public partial class Request
 
     public string Priority { get; set; } = null!;
 
-    public string Description { get; set; } = null!;
+    public string? Description { get; set; } = null!;
 
     public virtual User User { get; set; } = null!;
 }

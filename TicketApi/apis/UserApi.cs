@@ -23,13 +23,9 @@ namespace TicketApi
                 User? pers = users.FirstOrDefault(us => us.Login == loginData.Login && us.Password == loginData.Password);
                 if (pers == null) return Results.Unauthorized();
 
-
-                
-
                 var encodedJwt = GenerateAccessToken(pers);
                 var RefrToken = Guid.NewGuid().ToString();
 
-                
                 // формируем ответ
                 var response = new
                 {
@@ -38,18 +34,20 @@ namespace TicketApi
                     Username = pers.Username,
                     JobTitle = pers.JobTitle,
                     Login = pers.Login,
-                    Password =pers.Password,
-                    Role = pers.Role
+                    Password = pers.Password,
+                    Role = pers.Role,
+                    UserId = Convert.ToString(pers.UserId)
                 };
                
                 pers.RefreshToken = RefrToken;
-                pers.RefreshTokenExpireTime = DateTime.UtcNow.AddSeconds(15);
+                pers.RefreshTokenExpireTime = DateTime.UtcNow.AddHours(24);
                 db.SaveChanges();
                 return Results.Json(response);
                 //Console.WriteLine(loginData.Login+" "+loginData.Password);
             });
 
-            app.MapPost("/refresh-token", async (User request) =>
+
+            app.MapPost("/refresh-token", (User request) =>
             {
                 TicketsystemContext db = new TicketsystemContext();
                 // Проверяем, существует ли пользователь с этим Refresh Token
@@ -65,27 +63,27 @@ namespace TicketApi
 
                 // Можно также обновить Refresh Token (по желанию)
 
-
-
-
                 return Results.Content(newAccessToken);
                     
                 
             });
 
-            app.Map("/data", [Authorize(Roles ="User")] (HttpContext context) => 
-            
-                $"Hello World!"
-
+            app.MapPost("/send-request", [Authorize(Roles ="User")] (HttpContext context,Request req) =>
+            {
+                var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                Console.WriteLine(userId);
+            }
             );
         }
+
 
         public static string GenerateAccessToken(User pers)
         {
             var claims = new List<Claim>
                 {
-                    new Claim(ClaimTypes.Name, pers.Login),
-                    new Claim(ClaimTypes.Role,pers.Role)
+                    new Claim(ClaimTypes.NameIdentifier, Convert.ToString(pers.UserId)),
+                    new Claim(ClaimTypes.Role,pers.Role),
+                    
                 };
             var claimsIdentity = new ClaimsIdentity(claims, "Token");
             // создаем JWT-токен
@@ -93,7 +91,7 @@ namespace TicketApi
                     issuer: AuthOptions.ISSUER,
                     audience: AuthOptions.AUDIENCE,
                     claims: claims,
-                    expires: DateTime.UtcNow.Add(TimeSpan.FromSeconds(10)),
+                    expires: DateTime.UtcNow.Add(TimeSpan.FromMinutes(45)),
                     signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
             return new JwtSecurityTokenHandler().WriteToken(jwt);
         }
