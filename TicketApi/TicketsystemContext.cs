@@ -40,7 +40,7 @@ public partial class TicketsystemContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("problem_name");
             entity.Property(e => e.Room)
-                .HasMaxLength(50)
+                .HasMaxLength(50) 
                 .HasColumnName("room");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
