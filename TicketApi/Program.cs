@@ -10,9 +10,9 @@ using System.Text;
 
 
 var builder = WebApplication.CreateBuilder();
-var app = builder.Build();
 
-builder.Services.AddAuthorization();
+
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -24,12 +24,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = AuthOptions.AUDIENCE,
             ValidateLifetime = true,
             IssuerSigningKey = AuthOptions.GetSymmetricSecurityKey(),
-            ValidateIssuerSigningKey = true
+            ValidateIssuerSigningKey = true,
+            ClockSkew = TimeSpan.Zero
         };
     });
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserPolicy", policy => policy.RequireRole("User"));
+});
 
-
-
+var app = builder.Build();
 
 
 UserApi.MapRoutes(app);
@@ -46,10 +51,3 @@ public class AuthOptions
 
 
 
-/* using (var db = new TicketsystemContext())
-{
-    User nuser = new User {Username = "Иван", Login="iva", Password="lalala",JobTitle="Учитель", Role="use"};
-    db.Users.Add(nuser);
-    db.SaveChanges();
-}
-*/

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TicketApi;
+namespace TicketApi.Models;
 
 public partial class Request
 {
@@ -15,7 +15,7 @@ public partial class Request
 
     public string Priority { get; set; } = null!;
 
-    public string? Description { get; set; } = null!;
+    public string? Description { get; set; }
 
     public virtual User User { get; set; } = null!;
 }

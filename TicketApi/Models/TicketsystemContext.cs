@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace TicketApi;
+namespace TicketApi.Models;
 
 public partial class TicketsystemContext : DbContext
 {
@@ -40,7 +40,7 @@ public partial class TicketsystemContext : DbContext
                 .HasMaxLength(255)
                 .HasColumnName("problem_name");
             entity.Property(e => e.Room)
-                .HasMaxLength(50) 
+                .HasMaxLength(50)
                 .HasColumnName("room");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
@@ -66,14 +66,16 @@ public partial class TicketsystemContext : DbContext
             entity.Property(e => e.Password)
                 .HasMaxLength(255)
                 .HasColumnName("password");
+            entity.Property(e => e.Refreshtoken)
+                .HasColumnType("character varying")
+                .HasColumnName("refreshtoken");
+            entity.Property(e => e.Refreshtokenexpiretime).HasColumnName("refreshtokenexpiretime");
             entity.Property(e => e.Role)
                 .HasMaxLength(50)
                 .HasColumnName("role");
             entity.Property(e => e.Username)
                 .HasMaxLength(255)
                 .HasColumnName("username");
-            entity.Property(e => e.RefreshToken).HasColumnName("refreshtoken");
-            entity.Property(e => e.RefreshTokenExpireTime).HasColumnName("refreshtokenexpiretime");
         });
 
         OnModelCreatingPartial(modelBuilder);
