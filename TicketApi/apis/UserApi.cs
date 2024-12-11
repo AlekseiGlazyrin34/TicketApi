@@ -1,6 +1,7 @@
 ﻿
 
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -15,8 +16,12 @@ namespace TicketApi
     {
         public static void MapRoutes(WebApplication app) {
 
-            app.MapPost("/login", (User loginData) =>
+            app.MapPost("/login", (LoginDto loginData) =>
             {
+                if (string.IsNullOrWhiteSpace(loginData.Login) || string.IsNullOrWhiteSpace(loginData.Password))
+                {
+                    return Results.BadRequest("Логин и пароль обязательны.");
+                }
 
                 TicketsystemContext db = new TicketsystemContext();
                 var users = db.Users.ToList();
@@ -68,13 +73,28 @@ namespace TicketApi
                 
             });
 
-            app.MapPost("/send-request", [Authorize(Roles ="User")] (HttpContext context,Request req) =>
+            app.MapPost("/send-request", [Authorize(Roles ="User")] (HttpContext context,RequestDto req) =>
             {
+                TicketsystemContext db = new TicketsystemContext();
                 var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-                Console.WriteLine(userId);
+                Convert.ToInt32(userId);
+                
+
+                var newReq = new Request
+                {
+                    UserId = Convert.ToInt32(userId),
+                    ProblemName = req.ProblemName,
+                    Room = req.Room,
+                    Priority = req.Priority,
+                    Description = req.Description
+                };
+                db.Requests.Add(newReq);
+                db.SaveChanges();
+                return Results.Content("Запись добавлена");
             }
             );
         }
+
 
 
         public static string GenerateAccessToken(User pers)
@@ -96,4 +116,18 @@ namespace TicketApi
             return new JwtSecurityTokenHandler().WriteToken(jwt);
         }
     }
+    public class LoginDto
+    {
+        public string Login { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    public class RequestDto
+    {
+        public string ProblemName { get; set; } = null!;
+        public string Room {  get; set; }= null!;
+        public string Priority { get; set; } = null!;
+        public string Description { get; set; } =null!;
+    }
+    
 }
