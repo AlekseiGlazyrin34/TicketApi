@@ -7,7 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using TicketApi.Models;
+
 
 namespace TicketApi
 {
@@ -24,8 +24,11 @@ namespace TicketApi
                 }
 
                 TicketsystemContext db = new TicketsystemContext();
-                var users = db.Users.ToList();
-                User? pers = users.FirstOrDefault(us => us.Login == loginData.Login && us.Password == loginData.Password);
+                
+                User? pers = db.Users
+                    .Include(u => u.Role)
+                    .Include(u => u.Job)
+                    .FirstOrDefault(us => us.Login == loginData.Login && us.Password == loginData.Password);
                 if (pers == null) return Results.Unauthorized();
 
                 var encodedJwt = GenerateAccessToken(pers);
@@ -37,15 +40,15 @@ namespace TicketApi
                     Token = encodedJwt,
                     RefreshToken = RefrToken,
                     Username = pers.Username,
-                    JobTitle = pers.JobTitle,
+                    JobTitle = pers.Job.JobTitle,
                     Login = pers.Login,
                     Password = pers.Password,
-                    Role = pers.Role,
+                    Role = pers.Role.RoleName,
                     UserId = Convert.ToString(pers.UserId)
                 };
                
-                pers.RefreshToken = RefrToken;
-                pers.RefreshTokenExpireTime = DateTime.UtcNow.AddHours(24);
+                pers.Refreshtoken = RefrToken;
+                pers.Refreshtokenexpiretime = DateTime.UtcNow.AddHours(24).ToLocalTime(); ;
                 db.SaveChanges();
                 return Results.Json(response);
                 //Console.WriteLine(loginData.Login+" "+loginData.Password);
@@ -56,9 +59,9 @@ namespace TicketApi
             {
                 TicketsystemContext db = new TicketsystemContext();
                 // Проверяем, существует ли пользователь с этим Refresh Token
-                var pers = db.Users.FirstOrDefault(u => u.RefreshToken == request.RefreshToken);
+                var pers = db.Users.FirstOrDefault(u => u.Refreshtoken == request.Refreshtoken);
 
-                if (pers == null || pers.RefreshTokenExpireTime < DateTime.UtcNow)
+                if (pers == null || pers.Refreshtokenexpiretime < DateTime.UtcNow.ToLocalTime())
                 {
                     return Results.Content("LoginAgain");
                 }
@@ -68,33 +71,32 @@ namespace TicketApi
 
                 // Можно также обновить Refresh Token (по желанию)
 
-                return Results.Content(newAccessToken);
-                    
-                
+                return Results.Content(newAccessToken); 
             });
 
             app.MapPost("/send-request", [Authorize(Roles ="User")] (HttpContext context,RequestDto req) =>
             {
                 TicketsystemContext db = new TicketsystemContext();
                 var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-                
-                
 
+                int PrId = db.Priorities.FirstOrDefault(p => p.PriorityTitle == req.Priority).PriorityId;
                 var newReq = new Request
                 {
                     UserId = Convert.ToInt32(userId),
                     ProblemName = req.ProblemName,
                     Room = req.Room,
-                    Priority = req.Priority,
+                    PriorityId = PrId,
                     Description = req.Description,
-                    Status = "Новый",
-                    ReqTime= DateTime.UtcNow
+                    StatusId = 1,
+                    Reqtime= DateTime.UtcNow.ToLocalTime()
                 };
                 db.Requests.Add(newReq);
                 db.SaveChanges();
                 return Results.Content("Запись добавлена");
             }
             );
+
+            
         }
 
 
@@ -104,7 +106,7 @@ namespace TicketApi
             var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, Convert.ToString(pers.UserId)),
-                    new Claim(ClaimTypes.Role,pers.Role),
+                    new Claim(ClaimTypes.Role,pers.Role.RoleName),
                     
                 };
             var claimsIdentity = new ClaimsIdentity(claims, "Token");

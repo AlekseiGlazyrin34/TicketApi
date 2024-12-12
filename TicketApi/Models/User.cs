@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TicketApi.Models;
+namespace TicketApi;
 
 public partial class User
 {
@@ -9,17 +9,23 @@ public partial class User
 
     public string Username { get; set; } = null!;
 
-    public string JobTitle { get; set; } = null!;
-
     public string Login { get; set; } = null!;
 
     public string Password { get; set; } = null!;
 
-    public string Role { get; set; } = null!;
+    public int JobId { get; set; }
+
+    public int RoleId { get; set; }
 
     public string? Refreshtoken { get; set; }
 
     public DateTime? Refreshtokenexpiretime { get; set; }
 
+    public virtual Job Job { get; set; } = null!;
+
     public virtual ICollection<Request> Requests { get; set; } = new List<Request>();
+
+    public virtual ICollection<Response> Responses { get; set; } = new List<Response>();
+
+    public virtual Role Role { get; set; } = null!;
 }
