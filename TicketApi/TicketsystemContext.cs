@@ -43,7 +43,9 @@ public partial class TicketsystemContext : DbContext
                 .HasMaxLength(50) 
                 .HasColumnName("room");
             entity.Property(e => e.UserId).HasColumnName("user_id");
-
+            entity.Property(e => e.Status).HasColumnName("status")
+                .HasMaxLength(50);
+            entity.Property(e => e.ReqTime).HasColumnName("reqtime");
             entity.HasOne(d => d.User).WithMany(p => p.Requests)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -74,6 +76,7 @@ public partial class TicketsystemContext : DbContext
                 .HasColumnName("username");
             entity.Property(e => e.RefreshToken).HasColumnName("refreshtoken");
             entity.Property(e => e.RefreshTokenExpireTime).HasColumnName("refreshtokenexpiretime");
+
         });
 
         OnModelCreatingPartial(modelBuilder);
