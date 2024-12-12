@@ -77,7 +77,7 @@ namespace TicketApi
             {
                 TicketsystemContext db = new TicketsystemContext();
                 var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-                Convert.ToInt32(userId);
+                
                 
 
                 var newReq = new Request
@@ -86,7 +86,9 @@ namespace TicketApi
                     ProblemName = req.ProblemName,
                     Room = req.Room,
                     Priority = req.Priority,
-                    Description = req.Description
+                    Description = req.Description,
+                    Status = "Новый",
+                    ReqTime= DateTime.UtcNow
                 };
                 db.Requests.Add(newReq);
                 db.SaveChanges();
