@@ -55,11 +55,13 @@ namespace TicketApi
             });
 
 
-            app.MapPost("/refresh-token", (User request) =>
+            app.MapPost("/refresh-token", async (HttpContext context) =>
             {
                 TicketsystemContext db = new TicketsystemContext();
+                using var reader = new StreamReader(context.Request.Body);
+                string refrtok = await reader.ReadToEndAsync();
                 // Проверяем, существует ли пользователь с этим Refresh Token
-                var pers = db.Users.FirstOrDefault(u => u.Refreshtoken == request.Refreshtoken);
+                var pers = db.Users.FirstOrDefault(u => u.Refreshtoken == refrtok);
 
                 if (pers == null || pers.Refreshtokenexpiretime < DateTime.UtcNow.ToLocalTime())
                 {
@@ -96,6 +98,17 @@ namespace TicketApi
             }
             );
 
+            app.MapGet("/load-data", [Authorize(Roles = "User")] (HttpContext context) =>
+            {
+                TicketsystemContext db = new TicketsystemContext();
+                var userId = Convert.ToInt32(context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+                var reqs = db.Requests
+                    .Include(r=> r.Status)
+                    .Where(r=>r.UserId == userId)
+                    .Select(r => new {r.RequestId,r.ProblemName,r.Status.StatusName,r.Reqtime})
+                    .ToList();
+                return Results.Json(reqs);
+            });
             
         }
 
@@ -106,8 +119,7 @@ namespace TicketApi
             var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.NameIdentifier, Convert.ToString(pers.UserId)),
-                    new Claim(ClaimTypes.Role,pers.Role.RoleName),
-                    
+                    new Claim(ClaimTypes.Role,pers.Role.RoleName)
                 };
             var claimsIdentity = new ClaimsIdentity(claims, "Token");
             // создаем JWT-токен
@@ -115,7 +127,7 @@ namespace TicketApi
                     issuer: AuthOptions.ISSUER,
                     audience: AuthOptions.AUDIENCE,
                     claims: claims,
-                    expires: DateTime.UtcNow.Add(TimeSpan.FromMinutes(45)),
+                    expires: DateTime.UtcNow.Add(TimeSpan.FromMinutes(15)),
                     signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
             return new JwtSecurityTokenHandler().WriteToken(jwt);
         }
