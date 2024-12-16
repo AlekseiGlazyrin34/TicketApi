@@ -54,9 +54,9 @@ public partial class TicketsystemContext : DbContext
             entity.ToTable("priority", "ts");
 
             entity.Property(e => e.PriorityId).HasColumnName("priority_id");
-            entity.Property(e => e.PriorityTitle)
+            entity.Property(e => e.PriorityName)
                 .HasMaxLength(50)
-                .HasColumnName("priority_title");
+                .HasColumnName("priority_name");
         });
 
         modelBuilder.Entity<Request>(entity =>

@@ -81,7 +81,7 @@ namespace TicketApi
                 TicketsystemContext db = new TicketsystemContext();
                 var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-                int PrId = db.Priorities.FirstOrDefault(p => p.PriorityTitle == req.Priority).PriorityId;
+                int PrId = db.Priorities.FirstOrDefault(p => p.PriorityName == req.Priority).PriorityId;
                 var newReq = new Request
                 {
                     UserId = Convert.ToInt32(userId),
@@ -109,7 +109,20 @@ namespace TicketApi
                     .ToList();
                 return Results.Json(reqs);
             });
-            
+
+            app.MapGet("/loadadd-data", [Authorize(Roles = "User")] (HttpContext context, int reqid) =>
+            {
+                TicketsystemContext db = new TicketsystemContext();
+                /* using var reader = new StreamReader(context.Request.Body);
+                 var reqid = Convert.ToInt32(await reader.ReadToEndAsync());*/
+                var req = db.Requests
+                    .Include(r => r.Status)
+                    .Include(r => r.Priority)
+                    .Where(r => r.RequestId == reqid)
+                    .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Priority.PriorityName, r.Description, r.Reqtime, r.Room, r.Response.ResponseContent, r.Response.User.Username });
+                return Results.Json(req);
+
+            });
         }
 
 
