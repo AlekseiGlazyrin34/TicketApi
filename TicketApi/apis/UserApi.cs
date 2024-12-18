@@ -76,7 +76,7 @@ namespace TicketApi
                 return Results.Content(newAccessToken); 
             });
 
-            app.MapPost("/send-request", [Authorize(Roles ="User")] (HttpContext context,RequestDto req) =>
+            app.MapPost("/send-request", [Authorize(Roles ="User,Admin")] (HttpContext context,RequestDto req) =>
             {
                 TicketsystemContext db = new TicketsystemContext();
                 var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
@@ -110,18 +110,48 @@ namespace TicketApi
                 return Results.Json(reqs);
             });
 
-            app.MapGet("/loadadd-data", [Authorize(Roles = "User")] (HttpContext context, int reqid) =>
+            app.MapGet("/loadadd-data", [Authorize(Roles = "User,Admin")] (HttpContext context, int reqid) =>
             {
                 TicketsystemContext db = new TicketsystemContext();
-                /* using var reader = new StreamReader(context.Request.Body);
-                 var reqid = Convert.ToInt32(await reader.ReadToEndAsync());*/
+               
                 var req = db.Requests
                     .Include(r => r.Status)
                     .Include(r => r.Priority)
                     .Where(r => r.RequestId == reqid)
                     .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Priority.PriorityName, r.Description, r.Reqtime, r.Room, r.Response.ResponseContent, r.Response.User.Username });
                 return Results.Json(req);
+            });
 
+            app.MapGet("/load-alldata", [Authorize(Roles = "Admin")] (HttpContext context) =>
+            {
+                TicketsystemContext db = new TicketsystemContext();
+                
+                var reqs = db.Requests
+                    .Include(r => r.Status)
+                    .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Reqtime })
+                    .ToList();
+                return Results.Json(reqs);
+            });
+
+            app.MapPost("/save-changes", [Authorize(Roles = "Admin")] (HttpContext context,Changes ch) =>
+            {
+                TicketsystemContext db = new TicketsystemContext();
+                var userId = Convert.ToInt32(context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
+                Console.WriteLine(ch.ReqId+ ch.StatusName+ ch.ResponseContent);
+                var requestToUpdate = db.Requests.FirstOrDefault(r => r.RequestId == ch.ReqId);
+
+                if (requestToUpdate != null)
+                {
+                    var resp = new Response
+                    {
+                        ResponseContent = ch.ResponseContent,
+                        UserId = userId
+                    };
+                    
+                    requestToUpdate.StatusId = db.Statuses.FirstOrDefault(s=> s.StatusName==ch.StatusName).StatusId;
+                    requestToUpdate.Response = resp;
+                    db.SaveChanges();
+                }
             });
         }
 
@@ -158,5 +188,11 @@ namespace TicketApi
         public string Priority { get; set; } = null!;
         public string Description { get; set; } =null!;
     }
-    
+    public class Changes
+    {
+        public int ReqId { get; set; }
+        public string StatusName { get; set; } = null!;
+        public string ResponseContent { get; set; } = null!;
+    }
+
 }
