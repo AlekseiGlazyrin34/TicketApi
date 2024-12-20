@@ -34,7 +34,7 @@ namespace TicketApi
                 var encodedJwt = GenerateAccessToken(pers);
                 var RefrToken = Guid.NewGuid().ToString();
 
-                // формируем ответ
+                
                 var response = new
                 {
                     Token = encodedJwt,
@@ -51,7 +51,7 @@ namespace TicketApi
                 pers.Refreshtokenexpiretime = DateTime.UtcNow.AddHours(24).ToLocalTime(); ;
                 db.SaveChanges();
                 return Results.Json(response);
-                //Console.WriteLine(loginData.Login+" "+loginData.Password);
+                
             });
 
 
@@ -60,7 +60,7 @@ namespace TicketApi
                 TicketsystemContext db = new TicketsystemContext();
                 using var reader = new StreamReader(context.Request.Body);
                 string refrtok = await reader.ReadToEndAsync();
-                // Проверяем, существует ли пользователь с этим Refresh Token
+                
                 var pers = db.Users.FirstOrDefault(u => u.Refreshtoken == refrtok);
 
                 if (pers == null || pers.Refreshtokenexpiretime < DateTime.UtcNow.ToLocalTime())
@@ -68,10 +68,10 @@ namespace TicketApi
                     return Results.Content("LoginAgain");
                 }
 
-                // Генерируем новый Access Token
+                
                 var newAccessToken = GenerateAccessToken(pers);
 
-                // Можно также обновить Refresh Token (по желанию)
+               
 
                 return Results.Content(newAccessToken); 
             });
