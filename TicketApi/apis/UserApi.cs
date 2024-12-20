@@ -1,12 +1,12 @@
 ﻿
 
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System;
+using System.Net.Mail;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Net;
 
 
 namespace TicketApi
@@ -67,11 +67,9 @@ namespace TicketApi
                 {
                     return Results.Content("LoginAgain");
                 }
-
-                
                 var newAccessToken = GenerateAccessToken(pers);
 
-               
+                
 
                 return Results.Content(newAccessToken); 
             });
@@ -94,6 +92,7 @@ namespace TicketApi
                 };
                 db.Requests.Add(newReq);
                 db.SaveChanges();
+                
                 return Results.Content("Запись добавлена");
             }
             );
@@ -118,7 +117,7 @@ namespace TicketApi
                     .Include(r => r.Status)
                     .Include(r => r.Priority)
                     .Where(r => r.RequestId == reqid)
-                    .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Priority.PriorityName, r.Description, r.Reqtime, r.Room, r.Response.ResponseContent, r.Response.User.Username });
+                    .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Priority.PriorityName, r.Description, r.Reqtime, r.Room, r.Response.ResponseContent, respusername= r.Response.User.Username,r.User.Username });
                 return Results.Json(req);
             });
 
