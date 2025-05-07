@@ -5,7 +5,13 @@ using System.Text;
 
 
 var builder = WebApplication.CreateBuilder();
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp",
+        policy => policy.WithOrigins("http://localhost:8081")
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+});
 
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -33,6 +39,7 @@ var app = builder.Build();
 
 
 UserApi.MapRoutes(app);
+app.UseCors("AllowReactApp");
 app.Run();
 
 public class AuthOptions
