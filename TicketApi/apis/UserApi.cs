@@ -78,7 +78,7 @@ namespace TicketApi
             {
                 TicketsystemContext db = new TicketsystemContext();
                 var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-
+                Console.WriteLine("ksffsf" + req.Priority);
                 int PrId = db.Priorities.FirstOrDefault(p => p.PriorityName == req.Priority).PriorityId;
                 var newReq = new Request
                 {
