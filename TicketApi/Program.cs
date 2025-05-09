@@ -8,7 +8,7 @@ var builder = WebApplication.CreateBuilder();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
-        policy => policy.WithOrigins("http://localhost:8081")
+        policy => policy.WithOrigins("http://localhost:8082")
                         .AllowAnyMethod()
                         .AllowAnyHeader());
 });
@@ -37,9 +37,11 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
-
-UserApi.MapRoutes(app);
 app.UseCors("AllowReactApp");
+app.UseAuthentication();
+app.UseAuthorization();
+UserApi.MapRoutes(app);
+
 app.Run();
 
 public class AuthOptions
