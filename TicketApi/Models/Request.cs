@@ -1,4 +1,5 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
 
 namespace TicketApi;
 
@@ -10,7 +11,7 @@ public partial class Request
 
     public string? Description { get; set; }
 
-    public int PriorityId { get; set; } 
+    public int PriorityId { get; set; }
 
     public string ProblemName { get; set; } = null!;
 

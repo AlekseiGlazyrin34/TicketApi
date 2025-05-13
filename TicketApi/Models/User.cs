@@ -1,4 +1,6 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
+
 namespace TicketApi;
 
 public partial class User
@@ -19,7 +21,13 @@ public partial class User
 
     public DateTime? Refreshtokenexpiretime { get; set; }
 
+    public virtual ICollection<Chat> ChatAdmins { get; set; } = new List<Chat>();
+
+    public virtual ICollection<Chat> ChatUsers { get; set; } = new List<Chat>();
+
     public virtual Job Job { get; set; } = null!;
+
+    public virtual ICollection<Message> Messages { get; set; } = new List<Message>();
 
     public virtual ICollection<Request> Requests { get; set; } = new List<Request>();
 
