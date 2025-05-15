@@ -15,9 +15,13 @@ public partial class Chat
 
     public DateTime LastUpdated { get; set; }
 
+    public int? RequestId { get; set; }
+
     public virtual User? Admin { get; set; }
 
     public virtual ICollection<Message> Messages { get; set; } = new List<Message>();
+
+    public virtual Request? Request { get; set; }
 
     public virtual User User { get; set; } = null!;
 }

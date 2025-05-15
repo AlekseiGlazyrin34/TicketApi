@@ -48,16 +48,21 @@ public partial class TicketsystemContext : DbContext
             entity.Property(e => e.ChatId).HasColumnName("chat_id");
             entity.Property(e => e.AdminId).HasColumnName("admin_id");
             entity.Property(e => e.LastMessage)
-                .HasMaxLength(255)
+                .HasColumnType("character varying")
                 .HasColumnName("last_message");
             entity.Property(e => e.LastUpdated)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("last_updated");
+            entity.Property(e => e.RequestId).HasColumnName("request_id");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
             entity.HasOne(d => d.Admin).WithMany(p => p.ChatAdmins)
                 .HasForeignKey(d => d.AdminId)
                 .HasConstraintName("chats_users_fk_1");
+
+            entity.HasOne(d => d.Request).WithMany(p => p.Chats)
+                .HasForeignKey(d => d.RequestId)
+                .HasConstraintName("chats_requests_fk");
 
             entity.HasOne(d => d.User).WithMany(p => p.ChatUsers)
                 .HasForeignKey(d => d.UserId)
@@ -126,6 +131,7 @@ public partial class TicketsystemContext : DbContext
             entity.Property(e => e.Description)
                 .HasColumnType("character varying")
                 .HasColumnName("description");
+            entity.Property(e => e.Image).HasColumnName("image");
             entity.Property(e => e.PriorityId).HasColumnName("priority_id");
             entity.Property(e => e.ProblemName)
                 .HasMaxLength(255)

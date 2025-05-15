@@ -7,6 +7,7 @@ using System.Net.Mail;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Net;
+using System.Data;
 
 
 namespace TicketApi
@@ -149,9 +150,86 @@ namespace TicketApi
                     
                     requestToUpdate.StatusId = db.Statuses.FirstOrDefault(s=> s.StatusName==ch.StatusName).StatusId;
                     requestToUpdate.Response = resp;
+                    if (ch.CreateChat)
+                    {
+                        var chat = db.Chats.FirstOrDefault(c => c.RequestId == requestToUpdate.RequestId);
+                        if (chat == null)
+                        {
+                            chat = new Chat
+                            {
+                                UserId = requestToUpdate.UserId,
+                                AdminId = userId,
+                                LastMessage = requestToUpdate.ProblemName,
+                                LastUpdated = DateTime.Now
+                            };
+                            db.Chats.Add(chat);
+                        }
+                        else return Results.Content("ChatAlreadyExist");
+                        
+                    }
                     db.SaveChanges();
+                    return Results.Ok();
                 }
+                return Results.NotFound();
             });
+
+            app.MapGet("/get-adminchats", [Authorize(Roles = "Admin")] (HttpContext context) =>
+            {
+                var db = new TicketsystemContext();
+                var userId = int.Parse(context.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
+                var chats = db.Chats
+                    .Where(c => c.AdminId == userId || c.UserId == userId)
+                    .Select(c => new { c.ChatId, UserName = c.User.Username, c.LastMessage, c.LastUpdated })
+                    .ToList();
+                Console.WriteLine(chats.Count);
+                return Results.Json(chats);
+            });
+
+            app.MapGet("/get-chats", [Authorize(Roles = "User")] (HttpContext context) =>
+            {
+                var db = new TicketsystemContext();
+                var userId = int.Parse(context.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
+                var chats = db.Chats
+                    .Where(c => c.UserId == userId)
+                    .Select(c => new { c.ChatId, UserName = c.Admin.Username,c.LastMessage,c.LastUpdated })
+                    .ToList();
+                Console.WriteLine(chats.Count);
+                return Results.Json(chats);
+            });
+
+            app.MapGet("/get-messages", [Authorize(Roles = "User,Admin")] (int chatId) =>
+            {
+                var db = new TicketsystemContext();
+                var messages = db.Messages
+                    .Where(m => m.ChatId == chatId)
+                    .Select(m => new { m.Content, SenderName = m.Sender.Username, m.SentTime })
+                    .ToList();
+                return Results.Json(messages);
+            });
+
+            app.MapPost("/send-message", [Authorize(Roles = "User,Admin")] async (HttpContext context, MessageDto dto) =>
+            {
+                var db = new TicketsystemContext();
+                var senderId = int.Parse(context.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
+
+                var message = new Message
+                {
+                    ChatId = dto.ChatId,
+                    SenderId = senderId,
+                    Content = dto.Content,
+                    SentTime = DateTime.Now
+                };
+                db.Messages.Add(message);
+                var updatedChat =  db.Chats.FirstOrDefault(c=>c.ChatId == dto.ChatId);
+                updatedChat.LastMessage = message.Content;
+                updatedChat.LastUpdated = DateTime.Now;
+                await db.SaveChangesAsync();
+                return Results.Ok();
+            });
+
+
+
+
         }
 
 
@@ -192,6 +270,12 @@ namespace TicketApi
         public int ReqId { get; set; }
         public string StatusName { get; set; } = null!;
         public string ResponseContent { get; set; } = null!;
+        public bool CreateChat { get; set; } 
     }
-
+    public class MessageDto
+    {
+        public int ChatId { get; set; }
+        public string Content { get; set; } = null!;
+    }
+    
 }
