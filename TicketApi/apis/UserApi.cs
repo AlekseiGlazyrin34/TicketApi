@@ -49,7 +49,7 @@ namespace TicketApi
                 };
                
                 pers.Refreshtoken = RefrToken;
-                pers.Refreshtokenexpiretime = DateTime.UtcNow.AddHours(24).ToLocalTime(); ;
+                pers.Refreshtokenexpiretime = DateTime.UtcNow.AddSeconds(15).ToLocalTime(); ;
                 db.SaveChanges();
                 return Results.Json(response);
                 
@@ -62,15 +62,15 @@ namespace TicketApi
                 using var reader = new StreamReader(context.Request.Body);
                 string refrtok = await reader.ReadToEndAsync();
                 
-                var pers = db.Users.FirstOrDefault(u => u.Refreshtoken == refrtok);
+                var pers = db.Users
+                .Include(u=>u.Role)
+                .FirstOrDefault(u => u.Refreshtoken == refrtok);
 
                 if (pers == null || pers.Refreshtokenexpiretime < DateTime.UtcNow.ToLocalTime())
                 {
-                    return Results.Content("LoginAgain");
+                    return Results.Unauthorized();
                 }
                 var newAccessToken = GenerateAccessToken(pers);
-
-                
 
                 return Results.Content(newAccessToken); 
             });
@@ -207,7 +207,7 @@ namespace TicketApi
                 return Results.Json(messages);
             });
 
-            app.MapPost("/send-message", [Authorize(Roles = "User,Admin")] async (HttpContext context, MessageDto dto) =>
+            app.MapPost("/send-message", [Authorize(Roles = "User,Admin")] (HttpContext context, MessageDto dto) =>
             {
                 var db = new TicketsystemContext();
                 var senderId = int.Parse(context.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
@@ -223,12 +223,34 @@ namespace TicketApi
                 var updatedChat =  db.Chats.FirstOrDefault(c=>c.ChatId == dto.ChatId);
                 updatedChat.LastMessage = message.Content;
                 updatedChat.LastUpdated = DateTime.Now;
-                await db.SaveChangesAsync();
+                db.SaveChanges();
                 return Results.Ok();
             });
 
+            app.MapGet("/get-users", [Authorize(Roles = "Admin")] (HttpContext context) =>
+            {
+                var db = new TicketsystemContext();
+                var users = db.Users
+                    .Where(u => u.RoleId == 1)
+                    .Select(u => new { u.UserId, u.Username })
+                    .ToList();
+                return Results.Json(users);
+            });
 
-
+            app.MapPost("/create-chat", [Authorize(Roles = "Admin")] (HttpContext context, int userId) =>
+            {
+                var db = new TicketsystemContext();
+                var adminId = int.Parse(context.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
+                var chat = new Chat
+                {
+                    UserId = userId,
+                    AdminId = adminId,
+                    LastMessage = "",
+                    LastUpdated = DateTime.Now
+                };
+                db.Chats.Add(chat);
+                db.SaveChanges();
+            });
 
         }
 
@@ -247,7 +269,7 @@ namespace TicketApi
                     issuer: AuthOptions.ISSUER,
                     audience: AuthOptions.AUDIENCE,
                     claims: claims,
-                    expires: DateTime.UtcNow.Add(TimeSpan.FromMinutes(15)),
+                    expires: DateTime.UtcNow.Add(TimeSpan.FromSeconds(10)),
                     signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
             return new JwtSecurityTokenHandler().WriteToken(jwt);
         }
