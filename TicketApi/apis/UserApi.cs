@@ -49,7 +49,7 @@ namespace TicketApi
                 };
                
                 pers.Refreshtoken = RefrToken;
-                pers.Refreshtokenexpiretime = DateTime.UtcNow.AddSeconds(15).ToLocalTime(); ;
+                pers.Refreshtokenexpiretime = DateTime.UtcNow.AddDays(7).ToLocalTime(); ;
                 db.SaveChanges();
                 return Results.Json(response);
                 
@@ -180,6 +180,7 @@ namespace TicketApi
                 var chats = db.Chats
                     .Where(c => c.AdminId == userId || c.UserId == userId)
                     .Select(c => new { c.ChatId, UserName = c.User.Username, c.LastMessage, c.LastUpdated })
+                    .OrderByDescending(c => c.LastUpdated)
                     .ToList();
                 Console.WriteLine(chats.Count);
                 return Results.Json(chats);
@@ -192,6 +193,7 @@ namespace TicketApi
                 var chats = db.Chats
                     .Where(c => c.UserId == userId)
                     .Select(c => new { c.ChatId, UserName = c.Admin.Username,c.LastMessage,c.LastUpdated })
+                    .OrderByDescending(c => c.LastUpdated)
                     .ToList();
                 Console.WriteLine(chats.Count);
                 return Results.Json(chats);
@@ -269,7 +271,7 @@ namespace TicketApi
                     issuer: AuthOptions.ISSUER,
                     audience: AuthOptions.AUDIENCE,
                     claims: claims,
-                    expires: DateTime.UtcNow.Add(TimeSpan.FromSeconds(10)),
+                    expires: DateTime.UtcNow.Add(TimeSpan.FromMinutes(60)),
                     signingCredentials: new SigningCredentials(AuthOptions.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
             return new JwtSecurityTokenHandler().WriteToken(jwt);
         }
