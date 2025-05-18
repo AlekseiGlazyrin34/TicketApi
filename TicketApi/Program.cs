@@ -7,10 +7,15 @@ using System.Text;
 var builder = WebApplication.CreateBuilder();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp",
+    options.AddPolicy("AllowAll", policy => {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+    /*options.AddPolicy("AllowReactApp",
         policy => policy.WithOrigins("http://localhost:8081")
                         .AllowAnyMethod()
-                        .AllowAnyHeader());
+                        .AllowAnyHeader());*/
 });
 
 
@@ -37,12 +42,12 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
-app.UseCors("AllowReactApp");
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 UserApi.MapRoutes(app);
 
-app.Run();
+app.Run("https://192.168.2.62:7006");
 
 public class AuthOptions
 {
