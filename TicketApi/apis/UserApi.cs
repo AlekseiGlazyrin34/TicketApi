@@ -8,7 +8,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Net;
 using System.Data;
-
+using System.Text;
+using System.Security.Cryptography;
 
 namespace TicketApi
 {
@@ -16,6 +17,37 @@ namespace TicketApi
     public static class UserApi
     {
         public static void MapRoutes(WebApplication app) {
+
+            app.MapPost("/register", [Authorize(Roles = "Admin")] (HttpContext context, RegisterDto registerDto) =>
+            {
+                
+                TicketsystemContext db = new TicketsystemContext();
+                // Проверка существования пользователя
+                Console.WriteLine(registerDto.Username + " " + registerDto.Login + " " + " " + registerDto.JobId + " " + registerDto.RoleId);
+                User? pers = db.Users.FirstOrDefault(u => u.Login == registerDto.Login);
+                if (pers != null)
+                {
+                    return Results.BadRequest("Пользователь с таким логином уже существует");
+                }
+
+                // Хеширование пароля
+                var hashedPassword = HashPassword(registerDto.Password);
+                
+                // Создание нового пользователя
+                var user = new User
+                {
+                    Username = registerDto.Username,
+                    Login = registerDto.Login,
+                    Password = hashedPassword,
+                    JobId = registerDto.JobId,
+                    RoleId = registerDto.RoleId
+                };
+
+                db.Users.Add(user);
+                db.SaveChanges();
+
+                return Results.Ok(new { message = "Регистрация успешна" });
+            });
 
             app.MapPost("/login", (LoginDto loginData) =>
             {
@@ -29,8 +61,12 @@ namespace TicketApi
                 User? pers = db.Users
                     .Include(u => u.Role)
                     .Include(u => u.Job)
-                    .FirstOrDefault(us => us.Login == loginData.Login && us.Password == loginData.Password);
-                if (pers == null) return Results.Unauthorized();
+                    .FirstOrDefault(us => us.Login == loginData.Login);
+
+                var inputPasswordHash = HashPassword(loginData.Password);
+                if (pers.Password != inputPasswordHash)
+                    return Results.Unauthorized();
+                
 
                 var encodedJwt = GenerateAccessToken(pers);
                 var RefrToken = Guid.NewGuid().ToString();
@@ -256,7 +292,12 @@ namespace TicketApi
 
         }
 
-
+        public static string HashPassword(string password)
+        {
+            using var sha256 = SHA256.Create();
+            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(hashedBytes);
+        }
 
         public static string GenerateAccessToken(User pers)
         {
@@ -301,5 +342,14 @@ namespace TicketApi
         public int ChatId { get; set; }
         public string Content { get; set; } = null!;
     }
+ 
+        public class RegisterDto
+        {
+            public string Username { get; set; }
+            public string Login { get; set; }
+            public string Password { get; set; }
+            public int JobId { get; set; }
+            public int RoleId { get; set; }
+        }   
+    }
     
-}
