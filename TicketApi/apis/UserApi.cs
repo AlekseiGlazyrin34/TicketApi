@@ -142,6 +142,7 @@ namespace TicketApi
                     .Include(r=> r.Status)
                     .Where(r=>r.UserId == userId)
                     .Select(r => new {r.RequestId,r.ProblemName,r.Status.StatusName,r.Reqtime})
+                    .OrderByDescending(r =>r.Reqtime )
                     .ToList();
                 return Results.Json(reqs);
             });
@@ -165,6 +166,7 @@ namespace TicketApi
                 var reqs = db.Requests
                     .Include(r => r.Status)
                     .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Reqtime })
+                    .OrderByDescending(r => r.Reqtime)
                     .ToList();
                 return Results.Json(reqs);
             });
@@ -196,7 +198,8 @@ namespace TicketApi
                                 UserId = requestToUpdate.UserId,
                                 AdminId = userId,
                                 LastMessage = requestToUpdate.ProblemName,
-                                LastUpdated = DateTime.Now
+                                LastUpdated = DateTime.Now,
+                                RequestId = ch.ReqId
                             };
                             db.Chats.Add(chat);
                         }
@@ -214,8 +217,9 @@ namespace TicketApi
                 var db = new TicketsystemContext();
                 var userId = int.Parse(context.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
                 var chats = db.Chats
+                    .Include(c=>c.Request)
                     .Where(c => c.AdminId == userId || c.UserId == userId)
-                    .Select(c => new { c.ChatId, UserName = c.User.Username, c.LastMessage, c.LastUpdated })
+                    .Select(c => new { c.ChatId, UserName = c.User.Username, c.LastMessage, c.LastUpdated,c.Request.ProblemName})
                     .OrderByDescending(c => c.LastUpdated)
                     .ToList();
                 Console.WriteLine(chats.Count);
@@ -227,8 +231,9 @@ namespace TicketApi
                 var db = new TicketsystemContext();
                 var userId = int.Parse(context.User.Claims.First(c => c.Type == ClaimTypes.NameIdentifier).Value);
                 var chats = db.Chats
+                    .Include(c => c.Request)
                     .Where(c => c.UserId == userId)
-                    .Select(c => new { c.ChatId, UserName = c.Admin.Username,c.LastMessage,c.LastUpdated })
+                    .Select(c => new { c.ChatId, UserName = c.Admin.Username,c.LastMessage,c.LastUpdated, c.Request.ProblemName })
                     .OrderByDescending(c => c.LastUpdated)
                     .ToList();
                 Console.WriteLine(chats.Count);
