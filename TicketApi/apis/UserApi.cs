@@ -10,6 +10,7 @@ using System.Net;
 using System.Data;
 using System.Text;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Mvc;
 
 namespace TicketApi
 {
@@ -115,7 +116,7 @@ namespace TicketApi
             {
                 TicketsystemContext db = new TicketsystemContext();
                 var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-                Console.WriteLine("ksffsf" + req.Priority);
+                
                 int PrId = db.Priorities.FirstOrDefault(p => p.PriorityName == req.Priority).PriorityId;
                 var newReq = new Request
                 {
@@ -159,17 +160,25 @@ namespace TicketApi
                 return Results.Json(req);
             });
 
-            app.MapGet("/load-alldata", [Authorize(Roles = "Admin")] (HttpContext context) =>
+            app.MapGet("/load-alldata", [Authorize(Roles = "Admin")] (HttpContext context, [FromQuery] int? userId) =>
             {
-                TicketsystemContext db = new TicketsystemContext();
-                
-                var reqs = db.Requests
+                using var db = new TicketsystemContext();
+
+                var query = db.Requests
                     .Include(r => r.Status)
+                    .AsQueryable();
+
+                if (userId.HasValue)
+                    query = query.Where(r => r.UserId == userId.Value); // предполагаем, что у Request есть поле UserId
+
+                var reqs = query
                     .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Reqtime })
-                    .OrderByDescending(r => r.Reqtime)
+                    .OrderByDescending(r=>r.Reqtime)
                     .ToList();
+
                 return Results.Json(reqs);
             });
+
 
             app.MapPost("/save-changes", [Authorize(Roles = "Admin")] (HttpContext context,Changes ch) =>
             {
@@ -270,13 +279,19 @@ namespace TicketApi
                 return Results.Ok();
             });
 
-            app.MapGet("/get-users", [Authorize(Roles = "Admin")] (HttpContext context) =>
+            app.MapGet("/get-admins", [Authorize(Roles = "Admin")] (HttpContext context) =>
             {
                 var db = new TicketsystemContext();
                 var users = db.Users
                     .Where(u => u.RoleId == 1)
                     .Select(u => new { u.UserId, u.Username })
                     .ToList();
+                return Results.Json(users);
+            });
+            app.MapGet("/get-users", [Authorize(Roles = "Admin")] () =>
+            {
+                using var db = new TicketsystemContext();
+                var users = db.Users.Select(u => new { u.UserId, u.Username }).ToList();
                 return Results.Json(users);
             });
 
