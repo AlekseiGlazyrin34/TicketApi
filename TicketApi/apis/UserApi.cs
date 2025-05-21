@@ -56,23 +56,16 @@ namespace TicketApi
                 {
                     return Results.BadRequest("Логин и пароль обязательны.");
                 }
-
                 TicketsystemContext db = new TicketsystemContext();
-                
                 User? pers = db.Users
                     .Include(u => u.Role)
                     .Include(u => u.Job)
                     .FirstOrDefault(us => us.Login == loginData.Login);
-
                 var inputPasswordHash = HashPassword(loginData.Password);
                 if (pers.Password != inputPasswordHash)
                     return Results.Unauthorized();
-                
-
                 var encodedJwt = GenerateAccessToken(pers);
                 var RefrToken = Guid.NewGuid().ToString();
-
-                
                 var response = new
                 {
                     Token = encodedJwt,
@@ -84,12 +77,10 @@ namespace TicketApi
                     Role = pers.Role.RoleName,
                     UserId = Convert.ToString(pers.UserId)
                 };
-               
                 pers.Refreshtoken = RefrToken;
                 pers.Refreshtokenexpiretime = DateTime.UtcNow.AddDays(7).ToLocalTime(); ;
                 db.SaveChanges();
                 return Results.Json(response);
-                
             });
 
 
@@ -116,7 +107,6 @@ namespace TicketApi
             {
                 TicketsystemContext db = new TicketsystemContext();
                 var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
-                
                 int PrId = db.Priorities.FirstOrDefault(p => p.PriorityName == req.Priority).PriorityId;
                 var newReq = new Request
                 {
@@ -130,7 +120,6 @@ namespace TicketApi
                 };
                 db.Requests.Add(newReq);
                 db.SaveChanges();
-                
                 return Results.Content("Запись добавлена");
             }
             );
@@ -151,7 +140,6 @@ namespace TicketApi
             app.MapGet("/loadadd-data", [Authorize(Roles = "User,Admin")] (HttpContext context, int reqid) =>
             {
                 TicketsystemContext db = new TicketsystemContext();
-               
                 var req = db.Requests
                     .Include(r => r.Status)
                     .Include(r => r.Priority)
@@ -163,19 +151,15 @@ namespace TicketApi
             app.MapGet("/load-alldata", [Authorize(Roles = "Admin")] (HttpContext context, [FromQuery] int? userId) =>
             {
                 using var db = new TicketsystemContext();
-
                 var query = db.Requests
                     .Include(r => r.Status)
                     .AsQueryable();
-
                 if (userId.HasValue)
                     query = query.Where(r => r.UserId == userId.Value); // предполагаем, что у Request есть поле UserId
-
                 var reqs = query
                     .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Reqtime })
                     .OrderByDescending(r=>r.Reqtime)
                     .ToList();
-
                 return Results.Json(reqs);
             });
 
@@ -186,7 +170,6 @@ namespace TicketApi
                 var userId = Convert.ToInt32(context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value);
                 Console.WriteLine(ch.ReqId+ ch.StatusName+ ch.ResponseContent);
                 var requestToUpdate = db.Requests.FirstOrDefault(r => r.RequestId == ch.ReqId);
-
                 if (requestToUpdate != null)
                 {
                     var resp = new Response
@@ -194,7 +177,6 @@ namespace TicketApi
                         ResponseContent = ch.ResponseContent,
                         UserId = userId
                     };
-                    
                     requestToUpdate.StatusId = db.Statuses.FirstOrDefault(s=> s.StatusName==ch.StatusName).StatusId;
                     requestToUpdate.Response = resp;
                     if (ch.CreateChat)
@@ -213,7 +195,6 @@ namespace TicketApi
                             db.Chats.Add(chat);
                         }
                         else return Results.Content("ChatAlreadyExist");
-                        
                     }
                     db.SaveChanges();
                     return Results.Ok();

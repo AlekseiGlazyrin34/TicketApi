@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using TicketApi;
 using System.Text;
-
-
 var builder = WebApplication.CreateBuilder();
 builder.Services.AddCors(options =>
 {
