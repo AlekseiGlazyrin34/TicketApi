@@ -23,6 +23,8 @@ public partial class Request
 
     public int? ResponseId { get; set; }
 
+    public byte[]? Image { get; set; }
+
     public virtual ICollection<Chat> Chats { get; set; } = new List<Chat>();
 
     public virtual Priority Priority { get; set; } = null!;

@@ -108,6 +108,7 @@ namespace TicketApi
                 TicketsystemContext db = new TicketsystemContext();
                 var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
                 int PrId = db.Priorities.FirstOrDefault(p => p.PriorityName == req.Priority).PriorityId;
+                Console.WriteLine(req.Image);
                 var newReq = new Request
                 {
                     UserId = Convert.ToInt32(userId),
@@ -116,7 +117,8 @@ namespace TicketApi
                     PriorityId = PrId,
                     Description = req.Description,
                     StatusId = 1,
-                    Reqtime= DateTime.UtcNow.ToLocalTime()
+                    Reqtime= DateTime.UtcNow.ToLocalTime(),
+                    Image = string.IsNullOrEmpty(req.Image) ? null : Convert.FromBase64String(req.Image)
                 };
                 db.Requests.Add(newReq);
                 db.SaveChanges();
@@ -144,7 +146,7 @@ namespace TicketApi
                     .Include(r => r.Status)
                     .Include(r => r.Priority)
                     .Where(r => r.RequestId == reqid)
-                    .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Priority.PriorityName, r.Description, r.Reqtime, r.Room, r.Response.ResponseContent, respusername= r.Response.User.Username,r.User.Username });
+                    .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Priority.PriorityName, r.Description, r.Reqtime, r.Room, r.Response.ResponseContent, respusername= r.Response.User.Username,r.User.Username, ImageBase64 = r.Image != null ? Convert.ToBase64String(r.Image) : null });
                 return Results.Json(req);
             });
 
@@ -330,6 +332,7 @@ namespace TicketApi
         public string Room {  get; set; }= null!;
         public string Priority { get; set; } = null!;
         public string Description { get; set; } =null!;
+        public string? Image { get; set; } = null!;
     }
     public class Changes
     {
