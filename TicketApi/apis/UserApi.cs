@@ -21,7 +21,6 @@ namespace TicketApi
 
             app.MapPost("/register", [Authorize(Roles = "Admin")] (HttpContext context, RegisterDto registerDto) =>
             {
-                
                 TicketsystemContext db = new TicketsystemContext();
                 // Проверка существования пользователя
                 Console.WriteLine(registerDto.Username + " " + registerDto.Login + " " + " " + registerDto.JobId + " " + registerDto.RoleId);
@@ -30,10 +29,8 @@ namespace TicketApi
                 {
                     return Results.BadRequest("Пользователь с таким логином уже существует");
                 }
-
                 // Хеширование пароля
                 var hashedPassword = HashPassword(registerDto.Password);
-                
                 // Создание нового пользователя
                 var user = new User
                 {
@@ -43,10 +40,8 @@ namespace TicketApi
                     JobId = registerDto.JobId,
                     RoleId = registerDto.RoleId
                 };
-
                 db.Users.Add(user);
                 db.SaveChanges();
-
                 return Results.Ok(new { message = "Регистрация успешна" });
             });
 
@@ -108,7 +103,6 @@ namespace TicketApi
                 TicketsystemContext db = new TicketsystemContext();
                 var userId = context.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
                 int PrId = db.Priorities.FirstOrDefault(p => p.PriorityName == req.Priority).PriorityId;
-                Console.WriteLine(req.Image);
                 var newReq = new Request
                 {
                     UserId = Convert.ToInt32(userId),
@@ -118,7 +112,8 @@ namespace TicketApi
                     Description = req.Description,
                     StatusId = 1,
                     Reqtime= DateTime.UtcNow.ToLocalTime(),
-                    Image = string.IsNullOrEmpty(req.Image) ? null : Convert.FromBase64String(req.Image)
+                    Image1 = string.IsNullOrEmpty(req.Image1) ? null : Convert.FromBase64String(req.Image1),
+                    Image2 = string.IsNullOrEmpty(req.Image2) ? null : Convert.FromBase64String(req.Image2)
                 };
                 db.Requests.Add(newReq);
                 db.SaveChanges();
@@ -146,7 +141,20 @@ namespace TicketApi
                     .Include(r => r.Status)
                     .Include(r => r.Priority)
                     .Where(r => r.RequestId == reqid)
-                    .Select(r => new { r.RequestId, r.ProblemName, r.Status.StatusName, r.Priority.PriorityName, r.Description, r.Reqtime, r.Room, r.Response.ResponseContent, respusername= r.Response.User.Username,r.User.Username, ImageBase64 = r.Image != null ? Convert.ToBase64String(r.Image) : null });
+                    .Select(r => new { 
+                        r.RequestId, 
+                        r.ProblemName, 
+                        r.Status.StatusName, 
+                        r.Priority.PriorityName, 
+                        r.Description, 
+                        r.Reqtime, 
+                        r.Room, 
+                        r.Response.ResponseContent, 
+                        respusername= r.Response.User.Username,
+                        r.User.Username, 
+                        ImageBase641 = r.Image1 != null ? Convert.ToBase64String(r.Image1) : null,
+                        ImageBase642 = r.Image2 != null ? Convert.ToBase64String(r.Image2) : null
+                    });
                 return Results.Json(req);
             });
 
@@ -332,7 +340,8 @@ namespace TicketApi
         public string Room {  get; set; }= null!;
         public string Priority { get; set; } = null!;
         public string Description { get; set; } =null!;
-        public string? Image { get; set; } = null!;
+        public string? Image1 { get; set; } = null!;
+        public string? Image2 { get; set; } = null!;
     }
     public class Changes
     {

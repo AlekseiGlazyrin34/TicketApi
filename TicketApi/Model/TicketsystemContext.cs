@@ -131,7 +131,8 @@ public partial class TicketsystemContext : DbContext
             entity.Property(e => e.Description)
                 .HasColumnType("character varying")
                 .HasColumnName("description");
-            entity.Property(e => e.Image).HasColumnName("image");
+            entity.Property(e => e.Image1).HasColumnName("image1");
+            entity.Property(e => e.Image2).HasColumnName("image2");
             entity.Property(e => e.PriorityId).HasColumnName("priority_id");
             entity.Property(e => e.ProblemName)
                 .HasMaxLength(255)

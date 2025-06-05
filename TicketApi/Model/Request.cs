@@ -23,7 +23,9 @@ public partial class Request
 
     public int? ResponseId { get; set; }
 
-    public byte[]? Image { get; set; }
+    public byte[]? Image1 { get; set; }
+
+    public byte[]? Image2 { get; set; }
 
     public virtual ICollection<Chat> Chats { get; set; } = new List<Chat>();
 
